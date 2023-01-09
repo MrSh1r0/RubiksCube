@@ -2,7 +2,7 @@
 Hausarbeit - Spielekonsolenprogrammierung WS22/23
 
 # Controls
-Left-Click & Drag | Rotate the clicked row
+Left-Click & Drag | Rotate the clicked row /n
 Right-Click & Drag (Or W, A, S, D, Q, E) | Rotate the entire cube
 R | Shuffle the cube
 F | Reset/Finish the cube
