@@ -48,8 +48,9 @@ jobs:
       - name: Install dependencies
         shell: powershell
         run: |
-          choco install cmake ninja -y
-          git clone https://github.com/microsoft/vcpkg.git C:/vcpkg
+          if (!(Test-Path C:\vcpkg)) {
+            git clone https://github.com/microsoft/vcpkg.git C:/vcpkg
+          }
           C:/vcpkg/bootstrap-vcpkg.bat
 
       - name: Install vcpkg libraries
@@ -58,7 +59,11 @@ jobs:
           $VCPKG_ROOT = "C:/vcpkg"
           $env:VCPKG_ROOT = $VCPKG_ROOT
           $env:PATH = "$VCPKG_ROOT;$env:PATH"
-          & "$VCPKG_ROOT/vcpkg.exe" install glfw3:x64-windows glew:x64-windows glm:x64-windows
+
+          & "$VCPKG_ROOT/vcpkg.exe" install `
+            glfw3:x64-windows `
+            glew:x64-windows `
+            glm:x64-windows
 
       - name: Configure
         shell: powershell
@@ -66,7 +71,9 @@ jobs:
           $VCPKG_ROOT = "C:/vcpkg"
           $env:VCPKG_ROOT = $VCPKG_ROOT
           $env:PATH = "$VCPKG_ROOT;$env:PATH"
-          cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release `
+
+          cmake -S . -B build-windows -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows
 
@@ -79,11 +86,16 @@ jobs:
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path dist/windows | Out-Null
+
           Copy-Item build-windows/RubiksCube.exe dist/windows/RubiksCube.exe
           Copy-Item RubiksCube/FColor.glsl dist/windows/FColor.glsl
           Copy-Item RubiksCube/VColor.glsl dist/windows/VColor.glsl
           Copy-Item RubiksCube/Click.wav dist/windows/Click.wav
-          Compress-Archive -Path dist/windows/* -DestinationPath dist/rubiks-windows.zip -Force
+
+          Compress-Archive `
+            -Path dist/windows/* `
+            -DestinationPath dist/rubiks-windows.zip `
+            -Force
 
       - uses: actions/upload-artifact@v4
         with:
@@ -94,18 +106,19 @@ jobs:
     needs:
       - build-macos
       - build-windows
+
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+
+    if: startsWith(github.ref, 'refs/tags/')
 
     permissions:
       contents: write
 
-    env:
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
@@ -123,55 +136,44 @@ jobs:
         run: |
           echo "Checking artifacts..."
           ls -l dist
+
           test -f dist/rubiks-macos.zip
           test -f dist/rubiks-windows.zip
-
-      - name: Generate checksums
-        run: |
-          cd dist
-          sha256sum rubiks-macos.zip > rubiks-macos.sha256
-          sha256sum rubiks-windows.zip > rubiks-windows.sha256
-          cd ..
 
       - name: Generate release notes
         shell: bash
         run: |
           echo "Generating release notes..."
+
           git fetch --tags
 
           LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          SHORT_SHA="${GITHUB_SHA::7}"
 
           {
-            echo "## RubiksCube Release ${{ github.ref_name }}"
-            echo
-            echo "### 🔄 Changes"
-            echo
-
             if [ -z "$LAST_TAG" ]; then
-              echo "_Initial release_"
+              echo "## RubiksCube (${SHORT_SHA})"
               echo
               git log --pretty=format:"- %s"
             else
+              echo "## Changelogs"
+              echo
               git log "$LAST_TAG"..HEAD --pretty=format:"- %s"
             fi
-
-            echo
-            echo "### 📦 Artifacts"
-            echo "- macOS build (zip)"
-            echo "- Windows build (zip)"
-            echo "- SHA256 checksums included"
           } > RELEASE_NOTES.md
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
         with:
           tag_name: ${{ github.ref_name }}
+
           name: "RubiksCube ${{ github.ref_name }}"
+
           body_path: RELEASE_NOTES.md
+
           files: |
             dist/rubiks-macos.zip
             dist/rubiks-windows.zip
-            dist/rubiks-macos.sha256
-            dist/rubiks-windows.sha256
