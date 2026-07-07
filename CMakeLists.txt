@@ -68,6 +68,10 @@ target_link_libraries(RubiksCube PRIVATE
     GLEW::GLEW
 )
 
+if(WIN32)
+    target_link_libraries(RubiksCube PRIVATE winmm)
+endif()
+
 if(GLM_TARGET)
     target_link_libraries(RubiksCube PRIVATE ${GLM_TARGET})
 endif()
