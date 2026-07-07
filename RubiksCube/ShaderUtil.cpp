@@ -3,6 +3,7 @@
 #include <fstream>
 #include <filesystem>
 #include <cstdlib>
+#include <vector>
 
 GLuint ShaderUtil::CreateShaderProgram(const char* vertexFilename, const char* fragmentFilename)
 {
