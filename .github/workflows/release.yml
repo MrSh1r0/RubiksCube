@@ -30,7 +30,9 @@ jobs:
           cp RubiksCube/FColor.glsl dist/macos/FColor.glsl
           cp RubiksCube/VColor.glsl dist/macos/VColor.glsl
           cp RubiksCube/Click.wav dist/macos/Click.wav
-          cd dist/macos && zip -r ../rubiks-macos.zip . && cd ../..
+          cd dist/macos
+          zip -r ../rubiks-macos.zip .
+          cd ../..
 
       - uses: actions/upload-artifact@v4
         with:
@@ -64,7 +66,9 @@ jobs:
           $VCPKG_ROOT = "C:/vcpkg"
           $env:VCPKG_ROOT = $VCPKG_ROOT
           $env:PATH = "$VCPKG_ROOT;$env:PATH"
-          cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows
+          cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows
 
       - name: Build
         shell: powershell
@@ -85,88 +89,90 @@ jobs:
         with:
           name: rubiks-windows
           path: dist/rubiks-windows.zip
-  
+
   release:
-  needs: [build-macos, build-windows]
-  runs-on: ubuntu-latest
-  if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    needs:
+      - build-macos
+      - build-windows
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
 
-  permissions:
-    contents: write
+    permissions:
+      contents: write
 
-  env:
-    ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # --- Download artifacts ---
-    - name: Download macOS artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: rubiks-macos
-        path: dist
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rubiks-macos
+          path: dist
 
-    - name: Download Windows artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: rubiks-windows
-        path: dist
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rubiks-windows
+          path: dist
 
-    # --- Verify artifacts exist ---
-    - name: Verify artifacts
-      run: |
-        echo "Checking artifacts..."
-        ls -l dist
-        test -f dist/rubiks-macos.zip
-        test -f dist/rubiks-windows.zip
+      - name: Verify artifacts
+        run: |
+          echo "Checking artifacts..."
+          ls -l dist
+          test -f dist/rubiks-macos.zip
+          test -f dist/rubiks-windows.zip
 
-    # --- Generate SHA256 checksums ---
-    - name: Generate checksums
-      run: |
-        cd dist
-        sha256sum rubiks-macos.zip > rubiks-macos.sha256
-        sha256sum rubiks-windows.zip > rubiks-windows.sha256
-        cd ..
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum rubiks-macos.zip > rubiks-macos.sha256
+          sha256sum rubiks-windows.zip > rubiks-windows.sha256
+          cd ..
 
-    # --- Generate changelog from commits ---
-    - name: Generate changelog
-      id: changelog
-      run: |
-        echo "Generating changelog..."
-        echo "Changes since last tag:" > changelog.txt
-        git fetch --tags
-        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-        if [ -z "$LAST_TAG" ]; then
-          echo "No previous tag found, listing all commits." >> changelog.txt
-          git log --pretty=format:"- %s" >> changelog.txt
-        else
-          git log "$LAST_TAG"..HEAD --pretty=format:"- %s" >> changelog.txt
-        fi
-        echo "changelog=$(cat changelog.txt | sed ':a;N;$!ba;s/\n/%0A/g')" >> $GITHUB_OUTPUT
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "Generating changelog..."
+          echo "Changes since last tag:" > changelog.txt
+          git fetch --tags
 
-    # --- Create GitHub Release ---
-    - name: Create release
-      uses: softprops/action-gh-release@v2.0.2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: "RubiksCube ${{ github.ref_name }}"
-        body: |
-          ## RubiksCube Release ${{ github.ref_name }}
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
-          ### 🔄 Changes
-          ${{ steps.changelog.outputs.changelog }}
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tag found, listing all commits." >> changelog.txt
+            git log --pretty=format:"- %s" >> changelog.txt
+          else
+            git log "$LAST_TAG"..HEAD --pretty=format:"- %s" >> changelog.txt
+          fi
 
-          ### 📦 Artifacts
-          - macOS build (zip)
-          - Windows build (zip)
-          - SHA256 checksums included
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          cat changelog.txt >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
-        files: |
-          dist/rubiks-macos.zip
-          dist/rubiks-windows.zip
-          dist/rubiks-macos.sha256
-          dist/rubiks-windows.sha256
+      - name: Create release
+        uses: softprops/action-gh-release@v2.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "RubiksCube ${{ github.ref_name }}"
+          body: |
+            ## RubiksCube Release ${{ github.ref_name }}
+
+            ### 🔄 Changes
+            ${{ steps.changelog.outputs.changelog }}
+
+            ### 📦 Artifacts
+            - macOS build (zip)
+            - Windows build (zip)
+            - SHA256 checksums included
+
+          files: |
+            dist/rubiks-macos.zip
+            dist/rubiks-windows.zip
+            dist/rubiks-macos.sha256
+            dist/rubiks-windows.sha256
