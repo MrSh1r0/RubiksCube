@@ -133,44 +133,43 @@ jobs:
           sha256sum rubiks-windows.zip > rubiks-windows.sha256
           cd ..
 
-      - name: Generate changelog
-        id: changelog
+            - name: Generate release notes
+        shell: bash
         run: |
-          echo "Generating changelog..."
-          echo "Changes since last tag:" > changelog.txt
+          echo "Generating release notes..."
           git fetch --tags
 
-          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
 
-          if [ -z "$LAST_TAG" ]; then
-            echo "No previous tag found, listing all commits." >> changelog.txt
-            git log --pretty=format:"- %s" >> changelog.txt
-          else
-            git log "$LAST_TAG"..HEAD --pretty=format:"- %s" >> changelog.txt
-          fi
+          {
+            echo "## RubiksCube Release ${{ github.ref_name }}"
+            echo
+            echo "### 🔄 Changes"
+            echo
 
-          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
-          cat changelog.txt >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+            if [ -z "$LAST_TAG" ]; then
+              echo "_Initial release_"
+              echo
+              git log --pretty=format:"- %s"
+            else
+              git log "$LAST_TAG"..HEAD --pretty=format:"- %s"
+            fi
+
+            echo
+            echo "### 📦 Artifacts"
+            echo "- macOS build (zip)"
+            echo "- Windows build (zip)"
+            echo "- SHA256 checksums included"
+          } > RELEASE_NOTES.md
 
       - name: Create release
-        uses: softprops/action-gh-release@v2.0.2
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
           name: "RubiksCube ${{ github.ref_name }}"
-          body: |
-            ## RubiksCube Release ${{ github.ref_name }}
-
-            ### 🔄 Changes
-            ${{ steps.changelog.outputs.changelog }}
-
-            ### 📦 Artifacts
-            - macOS build (zip)
-            - Windows build (zip)
-            - SHA256 checksums included
-
+          body_path: RELEASE_NOTES.md
           files: |
             dist/rubiks-macos.zip
             dist/rubiks-windows.zip
