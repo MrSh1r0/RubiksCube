@@ -13,15 +13,29 @@ find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(GLEW REQUIRED)
 
-find_path(GLM_INCLUDE_DIR glm/glm.hpp
-    HINTS
-        /opt/homebrew/opt/glm/include
-        /opt/homebrew/include
-        /usr/local/include
-)
+find_package(glm CONFIG QUIET)
+if(TARGET glm::glm)
+    set(GLM_INCLUDE_DIRS "")
+    set(GLM_TARGET glm::glm)
+else()
+    find_path(GLM_INCLUDE_DIR glm/glm.hpp
+        HINTS
+            /opt/homebrew/opt/glm/include
+            /opt/homebrew/include
+            /usr/local/include
+            $ENV{VCPKG_ROOT}/installed/x64-windows/include
+            $ENV{VCPKG_ROOT}/installed/x64-windows-static/include
+            $ENV{VCPKG_ROOT}/installed/x86-windows/include
+            $ENV{VCPKG_ROOT}/installed/x64-windows-md/include
+            $ENV{VCPKG_ROOT}/installed/x64-windows-static-md/include
+    )
 
-if(NOT GLM_INCLUDE_DIR)
-    message(FATAL_ERROR "GLM headers not found. Install them with: brew install glm")
+    if(NOT GLM_INCLUDE_DIR)
+        message(FATAL_ERROR "GLM headers not found. Install them with Homebrew (brew install glm) or vcpkg.")
+    endif()
+
+    set(GLM_INCLUDE_DIRS ${GLM_INCLUDE_DIR})
+    set(GLM_TARGET "")
 endif()
 
 add_executable(RubiksCube
@@ -45,7 +59,7 @@ endif()
 
 target_include_directories(RubiksCube PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/RubiksCube
-    ${GLM_INCLUDE_DIR}
+    ${GLM_INCLUDE_DIRS}
 )
 
 target_link_libraries(RubiksCube PRIVATE
@@ -53,6 +67,10 @@ target_link_libraries(RubiksCube PRIVATE
     glfw
     GLEW::GLEW
 )
+
+if(GLM_TARGET)
+    target_link_libraries(RubiksCube PRIVATE ${GLM_TARGET})
+endif()
 
 add_custom_command(TARGET RubiksCube POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
