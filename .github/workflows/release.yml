@@ -46,7 +46,7 @@ jobs:
       - name: Install dependencies
         shell: powershell
         run: |
-          choco install cmake -y
+          choco install cmake ninja -y
           git clone https://github.com/microsoft/vcpkg.git C:/vcpkg
           C:/vcpkg/bootstrap-vcpkg.bat
 
@@ -63,7 +63,8 @@ jobs:
         run: |
           $VCPKG_ROOT = "C:/vcpkg"
           $env:VCPKG_ROOT = $VCPKG_ROOT
-          cmake -S . -B build-windows -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          $env:PATH = "$VCPKG_ROOT;$env:PATH"
+          cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows
 
       - name: Build
         shell: powershell
@@ -74,7 +75,7 @@ jobs:
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path dist/windows | Out-Null
-          Copy-Item build-windows/Release/RubiksCube.exe dist/windows/RubiksCube.exe
+          Copy-Item build-windows/RubiksCube.exe dist/windows/RubiksCube.exe
           Copy-Item RubiksCube/FColor.glsl dist/windows/FColor.glsl
           Copy-Item RubiksCube/VColor.glsl dist/windows/VColor.glsl
           Copy-Item RubiksCube/Click.wav dist/windows/Click.wav
