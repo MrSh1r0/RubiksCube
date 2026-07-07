@@ -9,7 +9,29 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <iostream>
+#include <cmath>
+#include <filesystem>
+#include <cstdlib>
+
+#if defined(_WIN32)
 #include <Windows.h>
+#endif
+
+static void PlayClickSound()
+{
+#if defined(_WIN32)
+	PlaySound(TEXT("Click.wav"), NULL, SND_FILENAME);
+#else
+	std::filesystem::path soundPath = std::filesystem::current_path() / "Click.wav";
+	if (!std::filesystem::exists(soundPath)) {
+		const char* cwd = std::getenv("PWD");
+		if (cwd != nullptr) {
+			soundPath = std::filesystem::path(cwd) / "Click.wav";
+		}
+	}
+	(void)soundPath;
+#endif
+}
 
 void CubeFinal::Initialize(GLFWwindow* window)
 {
@@ -258,7 +280,7 @@ void CubeFinal::UpdateDrag(double deltaTime)
 
 			ResetDragParams();
 
-			PlaySound(TEXT("Click.wav"), NULL, SND_FILENAME);
+			PlayClickSound();
 		}
 	}
 }

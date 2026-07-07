@@ -1,6 +1,8 @@
 #include "ShaderUtil.h"
 #include <iostream>
 #include <fstream>
+#include <filesystem>
+#include <cstdlib>
 
 GLuint ShaderUtil::CreateShaderProgram(const char* vertexFilename, const char* fragmentFilename)
 {
@@ -56,7 +58,32 @@ GLuint ShaderUtil::CreateShaderProgram(const char* vertexFilename, const char* f
 std::string ShaderUtil::LoadFile(const char* fileName)
 {
 	std::string result;
-	std::ifstream fileStream(fileName, std::ios::in);
+	std::filesystem::path basePath = std::filesystem::current_path();
+	std::vector<std::filesystem::path> candidates;
+	candidates.push_back(basePath / fileName);
+	candidates.push_back(basePath / "RubiksCube" / fileName);
+	candidates.push_back(std::filesystem::path(fileName));
+
+	const char* cwd = std::getenv("PWD");
+	if (cwd != nullptr) {
+		candidates.push_back(std::filesystem::path(cwd) / fileName);
+		candidates.push_back(std::filesystem::path(cwd) / "RubiksCube" / fileName);
+	}
+
+	std::filesystem::path candidate;
+	for (const auto& path : candidates) {
+		if (std::filesystem::exists(path)) {
+			candidate = path;
+			break;
+		}
+	}
+
+	std::ifstream fileStream(candidate.string(), std::ios::in);
+	if (!fileStream.is_open()) {
+		std::cerr << "Unable to open shader file: " << candidate.string() << std::endl;
+		return result;
+	}
+
 	while (!fileStream.eof()) {
 		std::string line;
 		std::getline(fileStream, line);

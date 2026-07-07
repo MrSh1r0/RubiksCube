@@ -1,11 +1,15 @@
 #include "CubeLogic.h"
 #include <iostream>
+#include <ctime>
+#include <cstdlib>
 
+#if defined(_WIN32)
 #include <Windows.h>
+#endif
 
 void CubeLogic::Initialize()
 {
-	srand(time(NULL));
+	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
 	ResetRotation();
 }
