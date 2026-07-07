@@ -2,6 +2,7 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <iostream>
 
 #include "CubeFinal.h"
 
@@ -11,18 +12,37 @@ GameInterface* gUsedInterface;
 
 GLFWwindow* InitializeSystem()
 {
-	glfwInit();
+	if (!glfwInit()) {
+		std::cerr << "Failed to initialize GLFW" << std::endl;
+		return nullptr;
+	}
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
 	GLFWwindow* window = glfwCreateWindow(1024, 768, "Rubiks Cube", nullptr, nullptr);
+	if (window == nullptr) {
+		std::cerr << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		return nullptr;
+	}
+
 	glfwMakeContextCurrent(window);
 
 	glewExperimental = GL_TRUE;
-	glewInit();
+	GLenum glewError = glewInit();
+	if (glewError != GLEW_OK) {
+		std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(glewError) << std::endl;
+		glfwDestroyWindow(window);
+		glfwTerminate();
+		return nullptr;
+	}
 
+	std::cout << "OpenGL initialized" << std::endl;
 	gUsedInterface->Initialize(window);
 
 	return window;
@@ -70,7 +90,12 @@ int main()
 	gUsedInterface = &gCube;
 
 	GLFWwindow* window = InitializeSystem();
+	if (window == nullptr) {
+		return 1;
+	}
+
 	RunCoreloop(window);
 	ShutdownSystem();
+	return 0;
 }
 
