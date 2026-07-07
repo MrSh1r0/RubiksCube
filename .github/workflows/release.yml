@@ -15,10 +15,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install glfw glew glm
+          brew install glfw glew glm ninja
 
       - name: Configure
-        run: cmake -S . -B build-macos -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build-macos -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build-macos -j4
