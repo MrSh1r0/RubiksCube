@@ -55,6 +55,10 @@ $env:VCPKG_ROOT = "C:\vcpkg"
 & "$env:VCPKG_ROOT\vcpkg.exe" install glfw3:x64-windows glew:x64-windows glm:x64-windows
 ```
 
+To use the Visual Studio IDE, open the repository folder (or its `CMakeLists.txt`)
+as a CMake project. The CMake configuration is the single source of truth for
+both platforms; there is no separate Visual Studio solution to maintain.
+
 Configure and build with the vcpkg toolchain:
 
 ```powershell
@@ -78,6 +82,9 @@ A GitHub Actions workflow is included at [.github/workflows/release.yml](.github
 Pushing a tag such as v1.0.0 will build macOS and Windows binaries and publish them as GitHub Release assets.
 
 ## Project Structure
-- [RubiksCube](RubiksCube): source code and assets
+- [src](src): C++ source and headers
+- [assets](assets): shaders and audio used at runtime
+- [docs](docs): project design documentation
+- [CMakeLists.txt](CMakeLists.txt): cross-platform build configuration
 - [README.md](README.md): project documentation
 - [.github/workflows/release.yml](.github/workflows/release.yml): automated release build pipeline

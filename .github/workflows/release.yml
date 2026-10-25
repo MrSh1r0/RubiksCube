@@ -2,8 +2,13 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -27,9 +32,9 @@ jobs:
         run: |
           mkdir -p dist/macos
           cp build-macos/RubiksCube dist/macos/RubiksCube
-          cp RubiksCube/FColor.glsl dist/macos/FColor.glsl
-          cp RubiksCube/VColor.glsl dist/macos/VColor.glsl
-          cp RubiksCube/Click.wav dist/macos/Click.wav
+          cp assets/FColor.glsl dist/macos/FColor.glsl
+          cp assets/VColor.glsl dist/macos/VColor.glsl
+          cp assets/Click.wav dist/macos/Click.wav
           cd dist/macos
           zip -r ../rubiks-macos.zip .
           cd ../..
@@ -88,9 +93,9 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist/windows | Out-Null
 
           Copy-Item build-windows/RubiksCube.exe dist/windows/RubiksCube.exe
-          Copy-Item RubiksCube/FColor.glsl dist/windows/FColor.glsl
-          Copy-Item RubiksCube/VColor.glsl dist/windows/VColor.glsl
-          Copy-Item RubiksCube/Click.wav dist/windows/Click.wav
+          Copy-Item assets/FColor.glsl dist/windows/FColor.glsl
+          Copy-Item assets/VColor.glsl dist/windows/VColor.glsl
+          Copy-Item assets/Click.wav dist/windows/Click.wav
 
           Compress-Archive `
             -Path dist/windows/* `

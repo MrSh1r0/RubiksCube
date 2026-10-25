@@ -13,40 +13,17 @@ find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(GLEW REQUIRED)
 
-find_package(glm CONFIG QUIET)
-if(TARGET glm::glm)
-    set(GLM_INCLUDE_DIRS "")
-    set(GLM_TARGET glm::glm)
-else()
-    find_path(GLM_INCLUDE_DIR glm/glm.hpp
-        HINTS
-            /opt/homebrew/opt/glm/include
-            /opt/homebrew/include
-            /usr/local/include
-            $ENV{VCPKG_ROOT}/installed/x64-windows/include
-            $ENV{VCPKG_ROOT}/installed/x64-windows-static/include
-            $ENV{VCPKG_ROOT}/installed/x86-windows/include
-            $ENV{VCPKG_ROOT}/installed/x64-windows-md/include
-            $ENV{VCPKG_ROOT}/installed/x64-windows-static-md/include
-    )
-
-    if(NOT GLM_INCLUDE_DIR)
-        message(FATAL_ERROR "GLM headers not found. Install them with Homebrew (brew install glm) or vcpkg.")
-    endif()
-
-    set(GLM_INCLUDE_DIRS ${GLM_INCLUDE_DIR})
-    set(GLM_TARGET "")
-endif()
+find_package(glm CONFIG REQUIRED)
 
 add_executable(RubiksCube
-    RubiksCube/CubeFinal.cpp
-    RubiksCube/CubeLogic.cpp
-    RubiksCube/CubeRenderer.cpp
-    RubiksCube/GameInterface.cpp
-    RubiksCube/InputSystem.cpp
-    RubiksCube/KeyboardObserver.cpp
-    RubiksCube/RubiksCube.cpp
-    RubiksCube/ShaderUtil.cpp
+    src/CubeFinal.cpp
+    src/CubeLogic.cpp
+    src/CubeRenderer.cpp
+    src/GameInterface.cpp
+    src/InputSystem.cpp
+    src/KeyboardObserver.cpp
+    src/RubiksCube.cpp
+    src/ShaderUtil.cpp
 )
 
 set_target_properties(RubiksCube PROPERTIES
@@ -58,36 +35,32 @@ if(APPLE)
 endif()
 
 target_include_directories(RubiksCube PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/RubiksCube
-    ${GLM_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(RubiksCube PRIVATE
     OpenGL::GL
     glfw
     GLEW::GLEW
+    glm::glm
 )
 
 if(WIN32)
     target_link_libraries(RubiksCube PRIVATE winmm)
 endif()
 
-if(GLM_TARGET)
-    target_link_libraries(RubiksCube PRIVATE ${GLM_TARGET})
-endif()
-
 add_custom_command(TARGET RubiksCube POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/RubiksCube/FColor.glsl
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/FColor.glsl
             $<TARGET_FILE_DIR:RubiksCube>/FColor.glsl
 )
 add_custom_command(TARGET RubiksCube POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/RubiksCube/VColor.glsl
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/VColor.glsl
             $<TARGET_FILE_DIR:RubiksCube>/VColor.glsl
 )
 add_custom_command(TARGET RubiksCube POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/RubiksCube/Click.wav
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/Click.wav
             $<TARGET_FILE_DIR:RubiksCube>/Click.wav
 )

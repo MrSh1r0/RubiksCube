@@ -5,7 +5,14 @@ arm64/
 x86/
 build/
 build-*/
+cmake-build-*/
+out/
+dist/
+Testing/
+.idea/
+CMakeUserPresets.json
 .DS_Store
+._*
 *.o
 *.obj
 *.exe
