@@ -53,7 +53,7 @@ set_target_properties(RubiksCube PROPERTIES
     OUTPUT_NAME "RubiksCube"
 )
 
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+if(APPLE)
     target_compile_options(RubiksCube PRIVATE -Wno-unknown-pragmas)
 endif()
 

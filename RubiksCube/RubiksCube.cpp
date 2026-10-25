@@ -1,5 +1,4 @@
 #include "GameInterface.h"
-#define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -98,4 +97,3 @@ int main()
 	ShutdownSystem();
 	return 0;
 }
-

@@ -24,50 +24,54 @@ The project uses:
 - GLM
 
 ## Build on macOS (Apple Silicon)
-Install the dependencies with Homebrew:
+Install CMake, Ninja, and the libraries with Homebrew:
 
 ```bash
-brew install glfw glew glm
+brew install cmake ninja glfw glew glm
 ```
 
-Build the project:
+Configure and build in a platform-specific directory. Ninja avoids generator issues
+with paths that contain special characters:
 
 ```bash
-cmake -S . -B build
-cmake --build build -j4
+cmake -S . -B build-macos -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-macos
 ```
 
 Run the application:
 
 ```bash
-./build/RubiksCube
-```
-
-A release-style local build output is also supported:
-
-```bash
-./arm64/Release/RubiksCube
+./build-macos/RubiksCube
 ```
 
 ## Build on Windows
-Install the dependencies with vcpkg:
+Install Visual Studio 2022 with the **Desktop development with C++** workload,
+then install vcpkg. From PowerShell, for example:
 
 ```powershell
-vcpkg install glfw3:x64-windows glew:x64-windows glm:x64-windows
+git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+C:\vcpkg\bootstrap-vcpkg.bat
+$env:VCPKG_ROOT = "C:\vcpkg"
+& "$env:VCPKG_ROOT\vcpkg.exe" install glfw3:x64-windows glew:x64-windows glm:x64-windows
 ```
 
-Build the project:
+Configure and build with the vcpkg toolchain:
 
 ```powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release
+cmake -S . -B build-windows -G "Visual Studio 17 2022" -A x64 `
+  -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+  -DVCPKG_TARGET_TRIPLET=x64-windows
+cmake --build build-windows --config Debug
 ```
 
 Run the application:
 
 ```powershell
-./build/Release/RubiksCube.exe
+.\build-windows\Debug\RubiksCube.exe
 ```
+
+Keep the macOS and Windows build directories separate; CMake build directories
+are tied to the generator and platform used when they were first configured.
 
 ## GitHub Releases
 A GitHub Actions workflow is included at [.github/workflows/release.yml](.github/workflows/release.yml).
